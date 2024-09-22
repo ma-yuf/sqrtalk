@@ -1,0 +1,65 @@
+New connection opened.
+New connection opened.
+User registered and logged in: name
+Error loading users: [json.exception.type_error.302] type must be string, but is boolean
+New connection opened.
+User registered and logged in: name
+Error loading users: [json.exception.type_error.305] cannot use operator[] with a string argument with string
+New connection opened.
+User registered and logged in: name
+New connection opened.
+Login failed for user: mayuf
+Connection closed.
+New connection opened.
+User logged in: mayuf
+Message from mayuf: hillo
+Could not open banned_users.json for reading.
+Error loading banned users: [json.exception.type_error.302] type must be array, but is null
+New connection opened.
+New connection opened.
+Login failed for user: mayuf
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+New connection opened.
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User logged in: mayuf
+Admin mayuf banned user: mayuf
+Error sending response: invalid state
+Connection closed.
+New connection opened.
+Banned user attempted to login: mayuf
+Banned user attempted to login: mayuf
+User logged in: mayuf
+New connection opened.
+User registered and logged in: asd
+Message from asd: asasdasdd
+Admin mayuf kicked user: asd
+Connection closed.
+Connection closed.
+New connection opened.
+User logged in: mayuf
+New connection opened.
+User registered and logged in: asd
+Message from mayuf: asdasd
+Message from mayuf: asdasd
+Private message from mayuf to asd: asdasd
+New connection opened.
+User logged in: asd
+New connection opened.
+User logged in: mayuf
+Message from mayuf: 你好
+Admin mayuf kicked user: asd
+Connection closed.
+New connection opened.
+User logged in: asd

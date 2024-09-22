@@ -1,0 +1,12 @@
+{
+    "users": {
+        "asd": {
+            "is_admin": false,
+            "password": "asd"
+        },
+        "mayuf": {
+            "is_admin": true,
+            "password": "mayuf"
+        }
+    }
+}
