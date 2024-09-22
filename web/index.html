@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>聊天室</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="login-container">
+        <h2>登录</h2>
+        <input type="text" id="username" placeholder="用户名">
+        <input type="password" id="password" placeholder="密码">
+        <button id="login-button">登录</button>
+        <p id="login-error" class="error-message"></p>
+    </div>
+    <div id="chat-container" style="display: none;">
+        <div id="chat-window"></div>
+        <div id="input-container">
+            <input type="text" id="private-recipient" placeholder="私信用户（可选）" class="collapsed" style="display: none;">
+            <div id="message-input-container">
+                <button id="toggle-private-recipient">私信</button>
+                <input type="text" id="message-input" placeholder="输入消息">
+                <button id="send-button">发送</button>
+            </div>
+        </div>
+        <p id="chat-error" class="error-message"></p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
