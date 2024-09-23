@@ -31,7 +31,7 @@ function login() {
     const username = usernameInput.value;
     const password = passwordInput.value;
 
-    socket = new WebSocket('ws://154.44.8.112:9002');
+    socket = new WebSocket('wss://server.vspeed.club');
 
     socket.onopen = () => {
         const loginData = {
