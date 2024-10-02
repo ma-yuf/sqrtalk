@@ -71,17 +71,6 @@ sendButton.addEventListener('click', () => {
             };
             socket.send(JSON.stringify(privateMessageData));
             displayMessage('private_message', { from: usernameInput.value, to: recipient, content: message });
-        } else if (message.startsWith('/')) {
-            if (message.startsWith('/kick') || message.startsWith('/ban')) {
-                pendingCommand = message;
-                displayMessage('system', { content: '请输入管理员密码' });
-            } else {
-                const commandData = {
-                    type: 'command',
-                    command: message
-                };
-                socket.send(JSON.stringify(commandData));
-            }
         } else {
             const messageData = {
                 type: 'message',
