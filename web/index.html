@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sqrtalk</title>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: black;
+            color: white;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #chat {
+            height: 90vh;
+            width: 100%;
+            overflow-y: scroll;
+            padding: 15px;
+            box-sizing: border-box;
+            white-space: pre-wrap; /* 保持换行 */
+            word-wrap: break-word; /* 自动换行 */
+        }
+        #chat .message {
+            margin: 10px 0;
+            padding: 8px;
+            border-radius: 5px;
+            background-color: #222;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        #chat .message p,
+        #chat .message strong,
+        #chat .message em {
+            color: inherit; /* 确保Markdown解析后的文本颜色与原有样式一致 */
+        }
+        #chat .message code {
+            font-size: 1.2em;
+            background-color: #444;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        #chat .message blockquote {
+            margin-left: 10px;
+            padding-left: 15px;
+            border-left: 4px solid #ddd;
+            color: #ccc;
+        }
+        #chat .message h1,
+        #chat .message h2,
+        #chat .message h3 {
+            color: #00ff00; /* 绿色标题 */
+            margin-bottom: 8px;
+        }
+        #chat .message p {
+            margin-bottom: 10px;
+        }
+        #chat .info {
+            color: lightgreen;
+            font-style: italic;
+        }
+        #chat .warn {
+            color: orange;
+        }
+        #chat a {
+            color: #33cc33; /* 绿色链接 */
+            text-decoration: none; /* 去掉下划线 */
+            border-bottom: 1px dashed #33cc33; /* 添加虚线边框以表示链接 */
+        }
+        #chat a:hover {
+            color: #66ff66; /* 悬停时变成更亮的绿色 */
+            border-bottom-color: #66ff66; /* 悬停时改变虚线颜色 */
+        }
+        #input-container {
+            display: flex;
+            padding: 10px;
+            box-sizing: border-box;
+            background-color: #1a1a1a;
+            border-top: 1px solid #333;
+        }
+        #input-container textarea {
+            flex-grow: 1;
+            padding: 5px;
+            border: none;
+            background-color: #2c2c2c;
+            color: white;
+            font-size: 14px;
+            resize: none; /* 禁止手动拖动调整大小 */
+            height: 50px; /* 设置固定的高度 */
+        }
+        #input-container button {
+            padding: 5px 10px;
+            margin-left: 10px;
+            background-color: #007bff;
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+        #input-container button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat"></div>
+    <div id="input-container">
+        <textarea id="message-input" placeholder="输入消息..."></textarea>
+        <button id="send-button">发送</button>
+    </div>
+    <!-- 本地引入 marked.min.js -->
+    <script src="node_modules/marked/marked.min.js"></script>
+    <script>
+        const ws = new WebSocket('wss://server.vspeed.club'); // 请确保这个WebSocket URL是有效的
+        const chat = document.getElementById('chat');
+        const messageInput = document.getElementById('message-input');
+        const sendButton = document.getElementById('send-button');
+        const username = prompt('请输入用户名:');
+        const password = prompt('请输入密码:');
+        const channel = prompt('请输入频道:');
+
+        function hasNewLine(parsedInfo) {
+            return /\n/.test(parsedInfo);
+        }
+
+        ws.onopen = () => {
+            ws.send(JSON.stringify({ type: 'login', username, password, channel }));
+        };
+ 
+        ws.onmessage = (event) => {
+            const message = JSON.parse(event.data);
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message'; // 添加类名以便进行样式控制
+
+            switch (message.type) {
+                case 'message':
+                    // 使用 marked 库解析 Markdown 文本
+                    const parsedMessage = marked.parse(message.content);  // 使用 marked.parse() 代替 marked()
+                    messageElement.innerHTML = `<span>[${new Date().toLocaleTimeString()}] ${message.username}: </span>${parsedMessage}`;
+                    break;
+                case 'info':
+                    if (!hasNewLine(message.message)) {
+                        messageElement.textContent = `[INFO] ${message.message}`;
+                        messageElement.style.color = 'lightgreen';
+                    } else {
+                        const parsedWarn = marked.parse(message.message);
+                        messageElement.innerHTML = `<span class="info">[INFO] ${parsedWarn}</span>`;
+                    }
+                    break;
+                case 'warn':
+                    if (hasNewLine(message.message)) {
+                        messageElement.textContent = `[WARN] ${message.message}`;
+                        messageElement.style.color = 'orange';
+                    } else {
+                        const parsedWarn = marked.parse(message.message);
+                        messageElement.innerHTML = `<span class="warn">[WARN] ${parsedWarn}</span>`;
+                    }
+                    break;
+                case 'ping':
+                    ws.send(JSON.stringify({ type: 'pong' }));
+                    break;
+                default:
+                    messageElement.textContent = `未知消息类型: ${JSON.stringify(message)}`;
+            }
+
+            chat.appendChild(messageElement);
+            chat.scrollTop = chat.scrollHeight;
+        };
+ 
+        ws.onerror = (error) => {
+            console.error('WebSocket 错误:', error);
+        };
+ 
+        ws.onclose = () => {
+            const closeMessage = document.createElement('div');
+            closeMessage.className = 'message'; // 添加类名以便进行样式控制（可选）
+            closeMessage.textContent = 'WebSocket 连接已关闭';
+            closeMessage.style.color = 'red';
+            chat.appendChild(closeMessage);
+        };
+ 
+        sendButton.addEventListener('click', () => {
+            const message = messageInput.value.trim();
+            if (message) {
+                ws.send(JSON.stringify({ type: 'message', message }));
+                messageInput.value = '';
+            }
+        });
+ 
+        messageInput.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' && !event.ctrlKey) {
+                // 按下 Enter 且没有按住 Ctrl 键时发送消息
+                sendButton.click();
+                event.preventDefault(); // 阻止默认的 Enter 换行行为
+            } else if (event.key === 'Enter' && event.ctrlKey) {
+                // 按下 Ctrl + Enter 时，插入换行符
+                const cursorPos = messageInput.selectionStart;
+                const textBeforeCursor = messageInput.value.substring(0, cursorPos);
+                const textAfterCursor = messageInput.value.substring(cursorPos);
+                messageInput.value = `${textBeforeCursor}\n${textAfterCursor}`;
+                messageInput.selectionStart = messageInput.selectionEnd = cursorPos + 1; // 光标位置调整
+                event.preventDefault(); // 阻止输入框默认行为
+            }
+        });
+    </script>
+</body>
+</html>
