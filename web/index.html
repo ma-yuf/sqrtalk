@@ -272,8 +272,7 @@
                                 loginContainer.style.display = 'flex';
                                 chat.style.display = 'none';
                                 inputContainer.style.display = 'none';
-                                messageElement.textContent = 'Token失效，请重新登录';
-                                messageElement.style.color = 'red';
+                                return;
                             } else if (!hasNewLine(message.message)) {
                                 messageElement.textContent = `[WARN] ${message.message}`;
                                 messageElement.style.color = 'orange';
