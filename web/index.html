@@ -13,45 +13,32 @@
             padding: 0;
             overflow: hidden;
         }
-        /* 登录界面样式 */
         #login-container {
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #111;
+            background-color: black;
         }
         #login-form {
             background-color: #1a1a1a;
-            padding: 30px;
-            border-radius: 15px;
-            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-            width: 300px;
-            text-align: center;
-        }
-        #login-form h2 {
-            margin-bottom: 20px;
-            color: #00ff00;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
         }
         #login-form label {
             display: block;
             margin-bottom: 10px;
             color: white;
-            text-align: left;
         }
         #login-form input {
             width: 100%;
-            padding: 10px;
+            padding: 8px;
             margin-bottom: 15px;
             border: none;
             border-radius: 5px;
             background-color: #2c2c2c;
             color: white;
-            font-size: 14px;
-        }
-        #login-form input:focus {
-            outline: none;
-            border: 1px solid #00ff00;
         }
         #login-form button {
             width: 100%;
@@ -61,22 +48,10 @@
             border-radius: 5px;
             color: white;
             cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.3s;
         }
         #login-form button:hover {
             background-color: #0056b3;
         }
-        #login-form .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        #login-form .checkbox-container label {
-            margin: 0;
-            margin-left: 10px;
-        }
-        /* 聊天界面样式 */
         #chat {
             height: 90vh;
             width: 100%;
@@ -187,17 +162,15 @@
     <!-- 登录界面 -->
     <div id="login-container">
         <form id="login-form">
-            <h2>登录 Sqrtalk</h2>
+            <h2>登录</h2>
             <label for="username">用户名:</label>
-            <input type="text" id="username" required>
+            <input type="text" id="username" required><br><br>
             <label for="password">密码:</label>
-            <input type="password" id="password" required>
+            <input type="password" id="password" required><br><br>
             <label for="channel">频道:</label>
-            <input type="text" id="channel" required>
-            <div class="checkbox-container">
-                <input type="checkbox" id="auto-login">
-                <label for="auto-login">自动登录</label>
-            </div>
+            <input type="text" id="channel" required><br><br>
+            <label for="auto-login">自动登录:</label>
+            <input type="checkbox" id="auto-login"><br><br>
             <button type="submit">登录</button>
         </form>
     </div>
@@ -229,7 +202,7 @@
         let password;
         let channel;
 
-        // 获取Cookie
+        // 获取Cookie中的Token
         function getCookie(name) {
             const cookieArr = document.cookie.split(';');
             for (let i = 0; i < cookieArr.length; i++) {
@@ -260,10 +233,9 @@
 
             ws.onopen = () => {
                 const token = getCookie('chat_token');
-                const savedChannel = getCookie('chat_channel');
-                if (token && savedChannel) {
-                    // 使用Token和频道登录
-                    ws.send(JSON.stringify({ type: 'login', token, channel: savedChannel }));
+                if (token) {
+                    // 使用Token登录
+                    ws.send(JSON.stringify({ type: 'login', token }));
                 } else {
                     // 使用用户名、密码和频道登录
                     ws.send(JSON.stringify({ type: 'login', username, password, channel }));
@@ -276,51 +248,46 @@
                 messageElement.className = 'message';
 
                 const levelClass = getUserLevelClass(message.level);
-                
-                if (autoLoginCheckbox.checked) {
-                    if (message.type === 'login' && message.token) {
-                        setCookie('chat_token', message.token, 7); // 存储Token，有效期7天
-                        setCookie('chat_channel', channel, 7); // 存储频道，有效期7天
+                if (message.token) {
+                    setCookie('chat_token', message.token, 7); // 存储Token，有效期7天
+                    return;
+                } else {
+                    switch (message.type) {
+                        case 'message':
+                            const parsedMessage = marked.parse(message.content);
+                            messageElement.innerHTML = `<span>[${new Date().toLocaleTimeString()}] <span class="${levelClass}">${message.username}</span>: </span>${parsedMessage}`;
+                            break;
+                        case 'info':
+                            if (!hasNewLine(message.message)) {
+                                messageElement.textContent = `[INFO] ${message.message}`;
+                                messageElement.style.color = 'lightgreen';
+                            } else {
+                                const parsedWarn = marked.parse(message.message);
+                                messageElement.innerHTML = `<span class="info">[INFO] ${parsedWarn}</span>`;
+                            }
+                            break;
+                        case 'warn':
+                            if (message.message === 'token失效') {
+                                deleteCookie('chat_token');
+                                loginContainer.style.display = 'flex';
+                                chat.style.display = 'none';
+                                inputContainer.style.display = 'none';
+                                messageElement.textContent = 'Token失效，请重新登录';
+                                messageElement.style.color = 'red';
+                            } else if (!hasNewLine(message.message)) {
+                                messageElement.textContent = `[WARN] ${message.message}`;
+                                messageElement.style.color = 'orange';
+                            } else {
+                                const parsedWarn = marked.parse(message.message);
+                                messageElement.innerHTML = `<span class="warn">[WARN] ${parsedWarn}</span>`;
+                            }
+                            break;
+                        case 'ping':
+                            ws.send(JSON.stringify({ type: 'pong' }));
+                            break;
+                        default:
+                            messageElement.textContent = `未知消息类型: ${JSON.stringify(message)}`;
                     }
-                    return 
-                }
-                
-                switch (message.type) {
-                    case 'message':
-                        const parsedMessage = marked.parse(message.content);
-                        messageElement.innerHTML = `<span>[${new Date().toLocaleTimeString()}] <span class="${levelClass}">${message.username}</span>: </span>${parsedMessage}`;
-                        break;
-                    case 'info':
-                        if (!hasNewLine(message.message)) {
-                            messageElement.textContent = `[INFO] ${message.message}`;
-                            messageElement.style.color = 'lightgreen';
-                        } else {
-                            const parsedWarn = marked.parse(message.message);
-                            messageElement.innerHTML = `<span class="info">[INFO] ${parsedWarn}</span>`;
-                        }
-                        break;
-                    case 'warn':
-                        if (message.message === 'token失效') {
-                            deleteCookie('chat_token');
-                            deleteCookie('chat_channel');
-                            loginContainer.style.display = 'flex';
-                            chat.style.display = 'none';
-                            inputContainer.style.display = 'none';
-                            messageElement.textContent = 'Token失效，请重新登录';
-                            messageElement.style.color = 'red';
-                        } else if (!hasNewLine(message.message)) {
-                            messageElement.textContent = `[WARN] ${message.message}`;
-                            messageElement.style.color = 'orange';
-                        } else {
-                            const parsedWarn = marked.parse(message.message);
-                            messageElement.innerHTML = `<span class="warn">[WARN] ${parsedWarn}</span>`;
-                        }
-                        break;
-                    case 'ping':
-                        ws.send(JSON.stringify({ type: 'pong' }));
-                        break;
-                    default:
-                        messageElement.textContent = `未知消息类型: ${JSON.stringify(message)}`;
                 }
 
                 chat.appendChild(messageElement);
@@ -355,9 +322,8 @@
 
         // 初始化
         const token = getCookie('chat_token');
-        const savedChannel = getCookie('chat_channel');
-        if (token && savedChannel) {
-            // 如果有Token和频道，直接初始化WebSocket连接
+        if (token) {
+            // 如果有Token，直接初始化WebSocket连接
             initWebSocket();
             loginContainer.style.display = 'none';
             chat.style.display = 'block';
