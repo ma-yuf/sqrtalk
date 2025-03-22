@@ -276,7 +276,15 @@
                 messageElement.className = 'message';
 
                 const levelClass = getUserLevelClass(message.level);
-
+                
+                if (autoLoginCheckbox.checked) {
+                    if (message.type === 'login' && message.token) {
+                        setCookie('chat_token', message.token, 7); // 存储Token，有效期7天
+                        setCookie('chat_channel', channel, 7); // 存储频道，有效期7天
+                    }
+                    return 
+                }
+                
                 switch (message.type) {
                     case 'message':
                         const parsedMessage = marked.parse(message.content);
@@ -338,17 +346,6 @@
             username = usernameInput.value;
             password = passwordInput.value;
             channel = channelInput.value;
-
-            if (autoLoginCheckbox.checked) {
-                // 如果选择自动登录，存储Token和频道
-                ws.onmessage = (event) => {
-                    const message = JSON.parse(event.data);
-                    if (message.type === 'login' && message.token) {
-                        setCookie('chat_token', message.token, 7); // 存储Token，有效期7天
-                        setCookie('chat_channel', channel, 7); // 存储频道，有效期7天
-                    }
-                };
-            }
 
             initWebSocket();
             loginContainer.style.display = 'none';
