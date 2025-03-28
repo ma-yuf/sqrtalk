@@ -414,7 +414,7 @@
 
         // 初始化WebSocket连接
         function initWebSocket() {
-            ws = new WebSocket('ws://127.0.0.1:9002');
+            ws = new WebSocket('wss://server.vspeed.club');
 
             ws.onopen = () => {
                 const token = getCookie('chat_token');
