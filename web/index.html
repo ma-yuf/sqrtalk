@@ -440,6 +440,11 @@
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         }
 
+        const escapeHTML = str => str.replace(/[&<>"']/g, m => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;',
+            '"': '&quot;', "'": '&#39;'
+        }[m]));
+
         // 初始化WebSocket连接
         function initWebSocket() {
             ws = new WebSocket('wss://server.vspeed.club');
@@ -476,7 +481,7 @@
                 } else {
                     switch (message.type) {
                         case 'message':
-                            const parsedMessage = marked.parse(message.content, {breaks: true, sanitize: true, smartypants: true, xhtml: true});
+                            const parsedMessage = marked.parse(escapeHTML(message.content));
                             const time = new Date().toLocaleTimeString();
                             
                             messageElement.innerHTML = `<div><span class="message-header"><span class="level-badge" style="color: #ffffff">lv.${message.level}</span><br>${message.tag ? `<span class="user-tag" style="background: ${message.color}">${message.tag}</span>` : ''}<br><span class="username" style="color: ${message.color}">${message.username}</span>:</span><span class="message-content">${parsedMessage}</span></div>`;
