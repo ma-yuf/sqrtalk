@@ -442,7 +442,7 @@
 
         // 初始化WebSocket连接
         function initWebSocket() {
-            ws = new WebSocket('wss://server.vspeed.club');
+            ws = new WebSocket('wss://sqrtalk.vspeed.club');
 
             ws.onopen = () => {
                 const token = getCookie('chat_token');
@@ -476,7 +476,7 @@
                 } else {
                     switch (message.type) {
                         case 'message':
-                            const parsedMessage = marked.parse(message.content);
+                            const parsedMessage = marked.parse(message.content, {breaks: true, sanitize: true, smartypants: true, xhtml: true});
                             const time = new Date().toLocaleTimeString();
                             
                             messageElement.innerHTML = `<div><span class="message-header"><span class="level-badge" style="color: #ffffff">lv.${message.level}</span><br>${message.tag ? `<span class="user-tag" style="background: ${message.color}">${message.tag}</span>` : ''}<br><span class="username" style="color: ${message.color}">${message.username}</span>:</span><span class="message-content">${parsedMessage}</span></div>`;
