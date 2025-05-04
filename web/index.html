@@ -442,7 +442,7 @@
 
         // 初始化WebSocket连接
         function initWebSocket() {
-            ws = new WebSocket('wss://sqrtalk.vspeed.club');
+            ws = new WebSocket('wss://server.vspeed.club');
 
             ws.onopen = () => {
                 const token = getCookie('chat_token');
