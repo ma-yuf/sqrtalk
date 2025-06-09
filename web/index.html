@@ -376,8 +376,6 @@
     <div id="upload-modal">
         <h3>上传文件确认</h3>
         <div id="file-info"></div>
-        <label for="upload-password">密码：</label>
-        <input type="password" id="upload-password" placeholder="输入上传密码">
         <div id="upload-modal-buttons">
             <button id="cancel-upload">取消</button>
             <button id="confirm-upload">确定上传</button>
@@ -440,14 +438,9 @@
             document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
         }
 
-        const escapeHTML = str => str.replace(/[&<>"']/g, m => ({
-            '&': '&amp;', '<': '&lt;', '>': '&gt;',
-            '"': '&quot;', "'": '&#39;'
-        }[m]));
-
         // 初始化WebSocket连接
         function initWebSocket() {
-            ws = new WebSocket('wss://server.vspeed.club');
+            ws = new WebSocket('wss://server.vspeed.club/ws');
 
             ws.onopen = () => {
                 const token = getCookie('chat_token');
@@ -481,7 +474,7 @@
                 } else {
                     switch (message.type) {
                         case 'message':
-                            const parsedMessage = marked.parse(escapeHTML(message.content));
+                            const parsedMessage = marked.parse(message.content);
                             const time = new Date().toLocaleTimeString();
                             
                             messageElement.innerHTML = `<div><span class="message-header"><span class="level-badge" style="color: #ffffff">lv.${message.level}</span><br>${message.tag ? `<span class="user-tag" style="background: ${message.color}">${message.tag}</span>` : ''}<br><span class="username" style="color: ${message.color}">${message.username}</span>:</span><span class="message-content">${parsedMessage}</span></div>`;
@@ -560,11 +553,21 @@
             URL.revokeObjectURL(url);
         }
 
-        function downloadFile(data, filename) {
-            // 创建Blob对象，不进行任何数据转换
-            const blob = new Blob([data], {
-                type: 'application/octet-stream' // 使用通用二进制类型
+        function base64ToBlob(base64Data) {
+            const base64WithoutPrefix = base64Data.split(',')[1] || base64Data;
+            const binaryString = atob(base64WithoutPrefix);
+            const bytes = new Uint8Array(binaryString.length);
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return new Blob([bytes], {
+                type: 'application/octet-stream'
             });
+        }
+
+        function downloadFile(data, filename) {
+
+            const blob = base64ToBlob(data);
 
             // 创建下载链接
             const url = URL.createObjectURL(blob);
@@ -631,6 +634,21 @@
         });
 
         // ==================== 改进的拖拽上传逻辑 ====================
+        // 添加文件转Base64函数
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => {
+                    // 移除Data URL前缀 (data:image/png;base64,)
+                    const base64Data = reader.result.split(',')[1];
+                    resolve(base64Data);
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 文件拖拽区域事件处理
         document.addEventListener('dragenter', (e) => {
             e.preventDefault();
             dragCounter++;
@@ -646,7 +664,6 @@
             e.preventDefault();
             dragCounter--;
             
-            // 只有当鼠标离开整个窗口时才隐藏
             if (dragCounter <= 0) {
                 dragCounter = 0;
                 dropZone.classList.remove('active');
@@ -658,11 +675,9 @@
             dragCounter = 0;
             dropZone.classList.remove('active');
 
-            // 检查是否有文件且不是从页面内部拖拽
             if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 selectedFile = e.dataTransfer.files[0];
                 
-                // 文件大小限制（100MB）
                 if (selectedFile.size > 100 * 1024 * 1024) {
                     alert('文件大小不能超过100MB');
                     return;
@@ -673,41 +688,34 @@
             }
         });
 
-        // 上传弹窗按钮事件
-        cancelUpload.addEventListener('click', () => {
-            uploadModal.style.display = 'none';
-            selectedFile = null;
-        });
-
+        // 上传确认按钮事件
         confirmUpload.addEventListener('click', async () => {
             if (!selectedFile) return;
 
-            const password = uploadPassword.value.trim();
+            const fileName = selectedFile.name;
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileData = e.target.result;
+            try {
+                const base64Data = await fileToBase64(selectedFile);
                 
                 ws.send(JSON.stringify({
                     type: 'uploadfile',
-                    filename: selectedFile.name,
-                    data: fileData,
-                    password: password
+                    filename: fileName,
+                    data: base64Data
                 }));
 
                 uploadModal.style.display = 'none';
-                uploadPassword.value = '';
                 selectedFile = null;
-                
-                // 添加发送成功提示
-                const successMsg = document.createElement('div');
-                successMsg.className = 'message info';
-                successMsg.textContent = `[文件上传] ${selectedFile.name} 已发送`;
-                chat.appendChild(successMsg);
-                chat.scrollTop = chat.scrollHeight;
-            };
 
-            reader.readAsText(selectedFile);
+            } catch (error) {
+                console.error('文件上传失败:', error);
+                alert('文件上传失败，请重试');
+            }
+        });
+
+        // 取消上传按钮事件
+        cancelUpload.addEventListener('click', () => {
+            uploadModal.style.display = 'none';
+            selectedFile = null;
         });
 
         // 辅助函数
